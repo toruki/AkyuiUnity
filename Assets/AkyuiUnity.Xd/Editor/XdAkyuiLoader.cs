@@ -108,6 +108,7 @@ namespace AkyuiUnity.Xd
             private readonly IXdGroupParser[] _groupParsers;
             private readonly ObbHolder _obbHolder;
             private Dictionary<string, XdObjectJson> _sourceGuidToObject;
+            private Dictionary<string, XdObjectJson> _symbolIdToObject;
 
             public XdRenderer(XdArtboard xdArtboard, XdAssetHolder xdAssetHolder, IXdObjectParser[] objectParsers, IXdGroupParser[] groupParsers, AkyuiXdImportTrigger[] triggers)
             {
@@ -156,11 +157,16 @@ namespace AkyuiUnity.Xd
             private void CreateRefObjectMap(XdResourcesResourcesJson resource)
             {
                 _sourceGuidToObject = new Dictionary<string, XdObjectJson>();
+                _symbolIdToObject = new Dictionary<string, XdObjectJson>();
 
                 var symbols = resource.Meta.Ux.Symbols;
                 foreach (var symbol in symbols)
                 {
                     CreateRefObjectMapInternal(symbol);
+                    if (symbol.Meta?.Ux?.SymbolId != null)
+                    {
+                        _symbolIdToObject[symbol.Meta.Ux.SymbolId] = symbol;
+                    }
                 }
             }
 
@@ -239,6 +245,50 @@ namespace AkyuiUnity.Xd
                     return @new;
                 }
 
+                T Clone<T>(T source)
+                {
+                    if (source == null) return source;
+
+                    var type = source.GetType();
+                    var @new = (T)Activator.CreateInstance(type);
+
+                    var propertyInfos = type.GetProperties();
+                    foreach (var propertyInfo in propertyInfos)
+                    {
+                        var t = propertyInfo.PropertyType;
+                        var sourceValue = propertyInfo.GetValue(source);
+                        var array = sourceValue as IList<XdObjectJson>;
+                        if (array != null)
+                        {
+                            var value = array.Select(s => Clone(s)).ToArray();
+                            propertyInfo.SetValue(@new, value);
+                        }
+                        else
+                        {
+                            if (typeof(IXdJsonElement).IsAssignableFrom(t))
+                            {
+                                var value = Clone(sourceValue);
+                                propertyInfo.SetValue(@new, value);
+                            }
+                            else
+                            {
+                                propertyInfo.SetValue(@new, sourceValue);
+                            }
+                        }
+                    }
+
+                    var guidProp = type.GetProperty("Guid");
+                    if (guidProp != null)
+                    {
+                        if (guidProp.GetValue(@new) == null)
+                        {
+                            guidProp.SetValue(@new, Guid.NewGuid().ToString());
+                        }
+                    }
+
+                    return @new;
+                }
+
                 var newXdObjectJson = xdObject;
 
                 if (xdObject.Type == "syncRef")
@@ -248,6 +298,61 @@ namespace AkyuiUnity.Xd
                     newXdObjectJson.Name = source.Name;
                     newXdObjectJson.Type = source.Type;
                     newXdObjectJson.Shape = source.Shape; // compoundのchildrenだけ上書きされるケースがあるが計算出来ないので戻す
+                }
+                else if (xdObject.Type == "group")
+                {
+                    var stateId = xdObject.Meta?.Ux?.StateId;
+                    var symbolId = xdObject.Meta?.Ux?.SymbolId;
+                    if (symbolId != null && stateId != null && stateId != xdObject.Id)
+                    {
+                        // has State
+                        var source = Clone(_symbolIdToObject[symbolId]);
+                        var stateList = new List<XdObjectJson>();
+
+                        // default state
+                        {
+                            var defaultState = new XdObjectJson();
+                            defaultState.Type = "group";
+                            defaultState.Name = "DefaultState";
+                            defaultState.Id = Guid.NewGuid().ToString();
+                            defaultState.Meta = new XdObjectMetaJson { Ux = new XdObjectMetaUxJson { StateId = stateId } };
+                            if (stateId == symbolId)
+                            {
+                                defaultState.Group = xdObject.Group;
+                            }
+                            else
+                            {
+                                defaultState.Group = source.Group;
+                            }
+                            stateList.Add(defaultState);
+                        }
+
+                        // other states
+                        foreach (var state in source.Meta.Ux.States)
+                        {
+                            // use xdObject's override state
+                            var useState = (xdObject.Meta?.Ux?.States ?? Array.Empty<XdObjectJson>()).FirstOrDefault(s => s.Meta?.Ux?.StateId == state.Meta?.Ux?.StateId);
+                            if (useState == null)
+                            {
+                                useState = state;
+                            }
+                            else
+                            {
+                                useState.Name = state.Name;
+                                useState.Transform = null;
+                            }
+                            if (useState.Meta.Ux.SymbolId == symbolId)
+                            {
+                                useState.Meta.Ux.SymbolId = null;
+                            }
+                            useState = GetRefObject(useState, triggers);
+                            stateList.Add(useState);
+                        }
+                        xdObject.Meta.Ux.SymbolId = null;
+                        newXdObjectJson = (XdObjectJson)Copy(typeof(XdObjectJson), new XdObjectJson(), xdObject);
+                        newXdObjectJson.Meta.Ux.States = null;
+                        newXdObjectJson.Group = new XdObjectGroupJson { Children = stateList.ToArray() };
+                    }
                 }
 
                 foreach (var trigger in triggers)
