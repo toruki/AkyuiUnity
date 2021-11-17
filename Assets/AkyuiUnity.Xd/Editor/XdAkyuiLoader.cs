@@ -315,13 +315,15 @@ namespace AkyuiUnity.Xd
                             defaultState.Type = "group";
                             defaultState.Name = "DefaultState";
                             defaultState.Id = Guid.NewGuid().ToString();
-                            defaultState.Meta = new XdObjectMetaJson { Ux = new XdObjectMetaUxJson { StateId = stateId } };
+                            defaultState.Meta = new XdObjectMetaJson { Ux = new XdObjectMetaUxJson { StateId = symbolId } };
                             if (stateId == symbolId)
                             {
+                                defaultState.Visible = true;
                                 defaultState.Group = xdObject.Group;
                             }
                             else
                             {
+                                defaultState.Visible = false;
                                 defaultState.Group = source.Group;
                             }
                             stateList.Add(defaultState);
@@ -345,6 +347,7 @@ namespace AkyuiUnity.Xd
                             {
                                 useState.Meta.Ux.SymbolId = null;
                             }
+                            useState.Visible = (useState.Meta.Ux.StateId == stateId);
                             useState = GetRefObject(useState, triggers);
                             stateList.Add(useState);
                         }
