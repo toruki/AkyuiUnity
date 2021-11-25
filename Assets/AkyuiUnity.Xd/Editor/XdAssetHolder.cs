@@ -13,11 +13,13 @@ namespace AkyuiUnity.Xd
         private readonly Dictionary<string, byte[]> _fileNameToBytes;
         private readonly Dictionary<string, Func<byte[]>> _fileNameToGenerators;
         private readonly Dictionary<uint, CachedSvg> _svgHash;
+        private readonly Dictionary<string, XdShapeMetaUxJson> _fileNameToMetaUx;
 
         public XdAssetHolder(XdFile xdFile)
         {
             _xdFile = xdFile;
             _fileNameToMeta = new Dictionary<string, XdStyleFillPatternMetaJson>();
+            _fileNameToMetaUx = new Dictionary<string, XdShapeMetaUxJson>();
             _fileNameToBytes = new Dictionary<string, byte[]>();
             _fileNameToGenerators = new Dictionary<string, Func<byte[]>>();
             _svgHash = new Dictionary<uint, CachedSvg>();
@@ -28,6 +30,12 @@ namespace AkyuiUnity.Xd
             if (_fileNameToMeta.ContainsKey(fileName))
             {
                 var meta = _fileNameToMeta[fileName];
+                return _xdFile.GetResource(meta);
+            }
+
+            if (_fileNameToMetaUx.ContainsKey(fileName))
+            {
+                var meta = _fileNameToMetaUx[fileName];
                 return _xdFile.GetResource(meta);
             }
 
@@ -55,6 +63,11 @@ namespace AkyuiUnity.Xd
         public void Save(string key, Func<byte[]> generator)
         {
             _fileNameToGenerators[key] = generator;
+        }
+
+        public void Save(string key, XdShapeMetaUxJson ux)
+        {
+            _fileNameToMetaUx[key] = ux;
         }
 
         public CachedSvg GetCachedSvg(uint svgHash)

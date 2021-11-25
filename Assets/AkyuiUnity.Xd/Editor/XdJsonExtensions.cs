@@ -115,7 +115,7 @@ namespace AkyuiUnity.Xd
 
         public static Color GetFillUnityColor(this XdObjectJson xdObjectJson)
         {
-            var color = xdObjectJson.Style.Fill.ToUnityColor();
+            var color = xdObjectJson.Style?.Fill.ToUnityColor() ?? new Color(1,1,1,1);
             color.a *= xdObjectJson.Style?.Opacity ?? 1f;
             return color;
         }

@@ -26,6 +26,7 @@ namespace AkyuiUnity.Xd
         private static readonly IXdObjectParser[] DefaultObjectParsers =
         {
             new ScrollbarObjectParser(), // ShapeObjectParserより前
+            new VideoObjectParser(), // ShapeObjectParserより前
             new ShapeObjectParser(),
             new TextObjectParser(),
         };

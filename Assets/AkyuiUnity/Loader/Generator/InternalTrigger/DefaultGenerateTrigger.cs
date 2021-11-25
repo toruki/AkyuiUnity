@@ -3,6 +3,7 @@ using System.Linq;
 using AkyuiUnity.Loader.Internal;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 using Object = UnityEngine.Object;
 
 namespace AkyuiUnity.Generator.InternalTrigger
@@ -12,6 +13,7 @@ namespace AkyuiUnity.Generator.InternalTrigger
         public Component CreateComponent(GameObject gameObject, IComponent component, IAssetLoader assetLoader)
         {
             if (component is ImageComponent imageComponent) return CreateImage(gameObject, assetLoader, imageComponent);
+            if (component is VideoComponent videoComponent) return CreateVideo(gameObject, assetLoader, videoComponent);
             if (component is MaskComponent maskComponent) return CreateMask(gameObject, assetLoader, maskComponent);
             if (component is TextComponent textComponent) return CreateText(gameObject, assetLoader, textComponent);
             if (component is AlphaComponent alphaComponent) return CreateAlpha(gameObject, assetLoader, alphaComponent);
@@ -355,6 +357,27 @@ namespace AkyuiUnity.Generator.InternalTrigger
             var image = gameObject.AddComponent<Image>();
             UpdateImage(gameObject, image, imageComponent, assetLoader);
             return image;
+        }
+
+        private Component CreateVideo(GameObject gameObject, IAssetLoader assetLoader, VideoComponent videoComponent)
+        {
+            if (videoComponent.Video == null)
+            {
+                return null;
+            }
+
+            var rawImage = gameObject.AddComponent<RawImage>();
+            var renderTexture = assetLoader.LoadRenderTexture(videoComponent.Video);
+            rawImage.texture = renderTexture;
+            var video = gameObject.AddComponent<VideoPlayer>();
+            video.renderMode = VideoRenderMode.RenderTexture;
+            video.targetTexture = renderTexture;
+            video.source = VideoSource.VideoClip;
+            video.clip = assetLoader.LoadVideoClip(videoComponent.Video);
+            video.isLooping = true;
+            video.audioOutputMode = VideoAudioOutputMode.None;
+            video.aspectRatio = VideoAspectRatio.FitInside;
+            return rawImage;
         }
 
         private static void UpdateImage(GameObject gameObject, Image image, ImageComponent imageComponent, IAssetLoader assetLoader)

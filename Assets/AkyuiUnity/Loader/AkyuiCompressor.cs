@@ -118,6 +118,18 @@ namespace AkyuiUnity.Loader
                     if (spriteAsset.Border != null) assetDict["border"] = ToSerializable(spriteAsset.Border);
                     assets.Add(assetDict);
                 }
+                else if (asset is MediaAsset mediaAsset)
+                {
+                    var assetDict = new Dictionary<string, object>
+                    {
+                        { "type", MediaAsset.TypeString },
+                        { "file", ToSerializable(mediaAsset.FileName) },
+                        { "size", ToSerializable(mediaAsset.Size) },
+                        { "hash", ToSerializable(mediaAsset.Hash) },
+                    };
+                    if (mediaAsset.UserData != null) assetDict["userdata"] = ToSerializable(mediaAsset.UserData);
+                    assets.Add(assetDict);
+                }
                 else
                 {
                     throw new NotSupportedException($"Asset type {asset} is not supported");
@@ -137,6 +149,11 @@ namespace AkyuiUnity.Loader
                 if (imageComponent.Sprite != null) dict["sprite"] = ToSerializable(imageComponent.Sprite);
                 if (imageComponent.Color != null) dict["color"] = ToSerializable(imageComponent.Color.Value);
                 if (imageComponent.Direction != null) dict["direction"] = ToSerializable(imageComponent.Direction.Value);
+            }
+            else if (source is VideoComponent videoComponent)
+            {
+                dict["type"] = VideoComponent.TypeString;
+                if (videoComponent.Video != null) dict["video"] = ToSerializable(videoComponent.Video);
             }
             else if (source is MaskComponent maskComponent)
             {

@@ -70,6 +70,24 @@ namespace AkyuiUnity
         }
     }
 
+    public class MediaAsset : IAsset
+    {
+        public const string TypeString = "media";
+
+        public string FileName { get; set; }
+        public uint Hash { get; set; }
+        public Vector2 Size { get; set; }
+        [CanBeNull] public string UserData { get; set; }
+
+        public MediaAsset([NotNull] string fileName, uint hash, Vector2 size, [CanBeNull] string userData)
+        {
+            FileName = fileName;
+            Hash = hash;
+            Size = size;
+            UserData = userData;
+        }
+    }
+
     public class Border
     {
         public Border(int top, int right, int bottom, int left)
@@ -149,6 +167,18 @@ namespace AkyuiUnity
             Sprite = sprite;
             Color = color;
             Direction = direction;
+        }
+    }
+
+    public class VideoComponent : IComponent
+    {
+        public const string TypeString = "video";
+
+        [CanBeNull] public readonly string Video;
+
+        public VideoComponent([CanBeNull] string video)
+        {
+            Video = video;
         }
     }
 

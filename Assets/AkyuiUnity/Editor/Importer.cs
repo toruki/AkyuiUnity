@@ -229,6 +229,16 @@ namespace AkyuiUnity.Editor
                     AssetDatabase.ImportAsset(savePath);
                     return;
                 }
+                if (asset is MediaAsset mediaAsset)
+                {
+                    File.WriteAllBytes(saveFullPath, bytes);
+                    AssetDatabase.ImportAsset(savePath);
+                    var rt = new RenderTexture((int)mediaAsset.Size.x, (int)mediaAsset.Size.y, 16, RenderTextureFormat.ARGB32, 0);
+                    var rtPath = Path.ChangeExtension(savePath, ".renderTexture");
+                    AssetDatabase.CreateAsset(rt, rtPath);
+                    AssetDatabase.Refresh();
+                    return;
+                }
             }
 
             logger.Error($"Unknown asset type {asset}");
@@ -311,6 +321,18 @@ namespace AkyuiUnity.Editor
         public Sprite LoadSprite(string name)
         {
             return AssetDatabase.LoadAssetAtPath<Sprite>(Path.Combine(_pathGetter.AssetOutputDirectoryPath, ConvertName(name)));
+        }
+
+        public RenderTexture LoadRenderTexture(string name)
+        {
+            var rtName = name + ".renderTexture";
+            return AssetDatabase.LoadAssetAtPath<RenderTexture>(Path.Combine(_pathGetter.AssetOutputDirectoryPath, ConvertName(rtName)));
+        }
+
+        public UnityEngine.Video.VideoClip LoadVideoClip(string name)
+        {
+            var videoName = name + ".mp4";
+            return AssetDatabase.LoadAssetAtPath<UnityEngine.Video.VideoClip>(Path.Combine(_pathGetter.AssetOutputDirectoryPath, ConvertName(videoName)));
         }
 
         public Font LoadFont(string name)

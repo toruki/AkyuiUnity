@@ -53,6 +53,13 @@ namespace XdParser
             return _zipFile.ReadBytes($"resources/{uid}");
         }
 
+        public byte[] GetResource(XdShapeMetaUxJson mediaMetaUxJson)
+        {
+            var guid = mediaMetaUxJson?.MediaFileGuid;
+            if (string.IsNullOrWhiteSpace(guid)) return null;
+            return _zipFile.ReadBytes($"resources/{guid}.mp4");
+        }
+
         public void Dispose()
         {
             _zipFile?.Dispose();
@@ -373,6 +380,9 @@ namespace XdParser.Internal
         [DataMember(Name = "height")]
         public float Height { get; set; }
 
+        [DataMember(Name = "meta")]
+        public XdShapeMetaJson Meta { get; set; }
+
         [DataMember(Name = "path")]
         public string Path { get; set; }
 
@@ -411,6 +421,33 @@ namespace XdParser.Internal
 
         [DataMember(Name = "points")]
         public XdPositionJson[] Points { get; set; }
+    }
+
+    public class XdShapeMetaJson : IXdJsonElement
+    {
+        [DataMember(Name = "ux")]
+        public XdShapeMetaUxJson Ux { get; set; }
+    }
+
+    public class XdShapeMetaUxJson : IXdJsonElement
+    {
+        [DataMember(Name = "subtype")]
+        public string SubType { get; set; }
+
+        [DataMember(Name = "mediaFill")]
+        public XdMediaFillJson MediaFill { get; set; }
+
+        [DataMember(Name = "mediaFileGuid")]
+        public string MediaFileGuid { get; set; }
+    }
+
+    public class XdMediaFillJson : IXdJsonElement
+    {
+        [DataMember(Name = "type")]
+        public string Type { get; set; }
+
+        [DataMember(Name = "pattern")]
+        public XdStyleFillPatternJson Pattern { get; set; }
     }
 
     public class XdTextJson : IXdJsonElement
