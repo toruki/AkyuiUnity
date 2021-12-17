@@ -308,54 +308,71 @@ namespace AkyuiUnity.Xd
                     {
                         // has State
                         var source = Clone(_symbolIdToObject[symbolId]);
-                        var stateList = new List<XdObjectJson>();
 
-                        // default state
+                        if (source.Meta?.Ux?.States == null)
                         {
-                            var defaultState = new XdObjectJson();
-                            defaultState.Type = "group";
-                            defaultState.Name = "DefaultState";
-                            defaultState.Id = Guid.NewGuid().ToString();
-                            defaultState.Meta = new XdObjectMetaJson { Ux = new XdObjectMetaUxJson { StateId = symbolId } };
-                            if (stateId == symbolId)
-                            {
-                                defaultState.Visible = true;
-                                defaultState.Group = xdObject.Group;
-                            }
-                            else
-                            {
-                                defaultState.Visible = false;
-                                defaultState.Group = source.Group;
-                            }
-                            stateList.Add(defaultState);
+                            xdObject.Meta.Ux.SymbolId = null;
+                            newXdObjectJson = (XdObjectJson)Copy(typeof(XdObjectJson), new XdObjectJson(), xdObject);
+                            newXdObjectJson.Group = source.Group;
                         }
+                        else
+                        {
+                            var stateList = new List<XdObjectJson>();
 
-                        // other states
-                        foreach (var state in source.Meta.Ux.States)
-                        {
-                            // use xdObject's override state
-                            var useState = (xdObject.Meta?.Ux?.States ?? Array.Empty<XdObjectJson>()).FirstOrDefault(s => s.Meta?.Ux?.StateId == state.Meta?.Ux?.StateId);
-                            if (useState == null)
+                            // default state
                             {
-                                useState = state;
+                                var defaultState = new XdObjectJson();
+                                defaultState.Type = "group";
+                                defaultState.Name = "DefaultState";
+                                defaultState.Id = Guid.NewGuid().ToString();
+                                defaultState.Meta =
+                                    new XdObjectMetaJson {Ux = new XdObjectMetaUxJson {StateId = symbolId}};
+                                if (stateId == symbolId)
+                                {
+                                    defaultState.Visible = true;
+                                    defaultState.Group = xdObject.Group;
+                                }
+                                else
+                                {
+                                    defaultState.Visible = false;
+                                    defaultState.Group = source.Group;
+                                }
+
+                                stateList.Add(defaultState);
                             }
-                            else
+
+                            // other states
+                            foreach (var state in source.Meta.Ux.States)
                             {
-                                useState.Name = state.Name;
-                                useState.Transform = null;
+                                // use xdObject's override state
+                                var useState =
+                                    (xdObject.Meta?.Ux?.States ?? Array.Empty<XdObjectJson>()).FirstOrDefault(s =>
+                                        s.Meta?.Ux?.StateId == state.Meta?.Ux?.StateId);
+                                if (useState == null)
+                                {
+                                    useState = state;
+                                }
+                                else
+                                {
+                                    useState.Name = state.Name;
+                                    useState.Transform = null;
+                                }
+
+                                if (useState.Meta.Ux.SymbolId == symbolId)
+                                {
+                                    useState.Meta.Ux.SymbolId = null;
+                                }
+
+                                useState.Visible = (useState.Meta.Ux.StateId == stateId);
+                                useState = GetRefObject(useState, triggers);
+                                stateList.Add(useState);
                             }
-                            if (useState.Meta.Ux.SymbolId == symbolId)
-                            {
-                                useState.Meta.Ux.SymbolId = null;
-                            }
-                            useState.Visible = (useState.Meta.Ux.StateId == stateId);
-                            useState = GetRefObject(useState, triggers);
-                            stateList.Add(useState);
+
+                            xdObject.Meta.Ux.SymbolId = null;
+                            newXdObjectJson = (XdObjectJson)Copy(typeof(XdObjectJson), new XdObjectJson(), xdObject);
+                            newXdObjectJson.Meta.Ux.States = null;
+                            newXdObjectJson.Group = new XdObjectGroupJson {Children = stateList.ToArray()};
                         }
-                        xdObject.Meta.Ux.SymbolId = null;
-                        newXdObjectJson = (XdObjectJson)Copy(typeof(XdObjectJson), new XdObjectJson(), xdObject);
-                        newXdObjectJson.Meta.Ux.States = null;
-                        newXdObjectJson.Group = new XdObjectGroupJson { Children = stateList.ToArray() };
                     }
                 }
 
